@@ -1,13 +1,13 @@
-FROM ubuntu:bionic
+FROM ubuntu:bionic AS builder
 LABEL Name=ubuntu_docker Version=0.0.1
-ENV SDKTOP /usr/src/orchestra-sdk-1.8-1/
-ENV VDS_GRADIENT_PATH /usr/local/vds_gradients/
-ENV OX_INSTALL_DIRECTORY=/usr/src/orchestra-sdk-1.8-1/
+ENV SDKTOP /usr/src/orchestra-sdk-1.10-1/
+ENV VDS_GRADIENT_PATH /usr/local/PsdGradFiles/
+ENV OX_INSTALL_DIRECTORY=/usr/src/orchestra-sdk-1.10-1/
 ENV MKL_ROOT=/opt/intel/mkl
 ENV MKLROOT=/opt/intel/mkl
 ENV MKL_INCLUDE=/opt/intel/mkl/include
 ENV MKL_LIBRARY=/opt/intel/mkl/lib/intel64
-ARG USERNAME=<>
+ARG USERNAME=change_to_match_host
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
@@ -44,12 +44,12 @@ RUN apt -y remove --purge --auto-remove cmake && version=3.16 && build=2 && wget
 RUN mkdir /opt/cmake && version=3.16 && build=2 && printf 'y\nn\n' | sh cmake-$version.$build-Linux-x86_64.sh --prefix=/opt/cmake --skip-license && ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
 
 # Copy Orchestra.tgz file and untar it
-ADD orchestra-sdk-1.8-1.x86_64.tgz /usr/src/
+ADD orchestra-sdk-1.10-1.tgz /usr/src/
 
 WORKDIR /usr/src/
 # Install Orchestra Examples
-RUN mkdir build && mkdir source && cp -r orchestra-sdk-1.8-1/Examples/* ./source
-RUN cd build && CC=gcc-4.8 CXX=g++-4.8 cmake -DOX_INSTALL_DIRECTORY=/usr/src/orchestra-sdk-1.8-1/ -G 'Unix Makefiles' ../source && make -j 4 && make install
+RUN mkdir build && mkdir source && cp -r orchestra-sdk-1.10-1/Examples/* ./source
+RUN cd build && CC=gcc-4.8 CXX=g++-4.8 cmake -DOX_INSTALL_DIRECTORY=/usr/src/orchestra-sdk-1.10-1/ -G 'Unix Makefiles' ../source && make -j 4 && make install
 
 # copy some libraries for pcvipr
 RUN cp -r $SDKTOP/3p/include/blitz/* /usr/local/include/ \ 
@@ -93,4 +93,25 @@ RUN cd mri_recon && mkdir build && cd build && CC=gcc-4.8 CXX=g++-4.8 FC=gfortra
 ADD pcvipr_wrapper.tgz ${HOME}/local_setup/
 RUN cd pcvipr_wrapper && mkdir build && cd build && CC=gcc-4.8 CXX=g++-4.8 FC=gfortran-4.8 cmake ../ -DCMAKE_INSTALL_PREFIX=/usr/local/ && make -j 12 && make install
 
+# Remove Source Code
+RUN rm -rf /local_setup/
+
+# Add vds_gradients
+ADD PsdGradFiles.tar /usr/local/
+
+# Use multi-stage build to clear source code history
+FROM ubuntu:bionic
+ENV SDKTOP /usr/src/orchestra-sdk-1.10-1/
+ENV VDS_GRADIENT_PATH /usr/local/PsdGradFiles/
+ENV OX_INSTALL_DIRECTORY=/usr/src/orchestra-sdk-1.10-1/
+ENV MKL_ROOT=/opt/intel/mkl
+ENV MKLROOT=/opt/intel/mkl
+ENV MKL_INCLUDE=/opt/intel/mkl/include
+ENV MKL_LIBRARY=/opt/intel/mkl/lib/intel64
+ARG USERNAME=change_to_match_host
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+COPY --from=builder / /
+
 USER $USERNAME
+WORKDIR /home/$USERNAME

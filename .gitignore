@@ -5,3 +5,4 @@ Dockerfile_focal
 *.tgz
 *.gz
 README_Bochao.md
+*.tar
