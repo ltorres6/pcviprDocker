@@ -3,9 +3,9 @@ LABEL Name=ubuntu_docker Version=0.0.1
 ENV SDKTOP /usr/src/orchestra-sdk-1.10-1/
 ENV VDS_GRADIENT_PATH /usr/local/PsdGradFiles/
 ENV OX_INSTALL_DIRECTORY=/usr/src/orchestra-sdk-1.10-1/
-ENV MKL_ROOT=/opt/intel/mkl
-ENV MKLROOT=/opt/intel/mkl
-ENV MKL_INCLUDE=/opt/intel/mkl/include
+ENV MKL_ROOT=/opt/intel/mkl/
+ENV MKLROOT=/opt/intel/mkl/
+ENV MKL_INCLUDE=/opt/intel/mkl/include/
 ENV MKL_LIBRARY=/opt/intel/mkl/lib/intel64
 ARG USERNAME=change_to_match_host
 ARG USER_UID=1000
@@ -40,7 +40,7 @@ RUN apt clean
 
 # Install Newer Cmake
 WORKDIR /usr/src/cmake
-RUN apt -y remove --purge --auto-remove cmake && version=3.16 && build=2 && wget https://cmake.org/files/v$version/cmake-$version.$build-Linux-x86_64.sh
+RUN apt -y remove --purge --auto-remove cmake && version=3.16 && build=2 && wget --no-check-certificate https://cmake.org/files/v$version/cmake-$version.$build-Linux-x86_64.sh
 RUN mkdir /opt/cmake && version=3.16 && build=2 && printf 'y\nn\n' | sh cmake-$version.$build-Linux-x86_64.sh --prefix=/opt/cmake --skip-license && ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
 
 # Copy Orchestra.tgz file and untar it
@@ -52,18 +52,18 @@ RUN mkdir build && mkdir source && cp -r orchestra-sdk-1.10-1/Examples/* ./sourc
 RUN cd build && CC=gcc-4.8 CXX=g++-4.8 cmake -DOX_INSTALL_DIRECTORY=/usr/src/orchestra-sdk-1.10-1/ -G 'Unix Makefiles' ../source && make -j 4 && make install
 
 # copy some libraries for pcvipr
-RUN cp -r $SDKTOP/3p/include/blitz/* /usr/local/include/ \ 
-    && cp -r $SDKTOP/3p/lib/libblitz.la /usr/local/lib/ \ 
-    && cp -r $SDKTOP/3p/lib/libblitz.a /usr/local/lib/ \ 
-    && cp -r $SDKTOP/3p/lib/pkgconfig/blitz.pc /usr/local/lib/ \ 
-    && cp -r $SDKTOP/3p/include/H5* /usr/local/include/ \ 
-    && cp -r $SDKTOP/3p/include/hdf5.h /usr/local/include/ \ 
-    && cp -r $SDKTOP/3p/include/ph5diff.h /usr/local/include/ \ 
+RUN cp -r $SDKTOP/3p/include/blitz/* /usr/local/include/ \
+    && cp -r $SDKTOP/3p/lib/libblitz.la /usr/local/lib/ \
+    && cp -r $SDKTOP/3p/lib/libblitz.a /usr/local/lib/ \
+    && cp -r $SDKTOP/3p/lib/pkgconfig/blitz.pc /usr/local/lib/ \
+    && cp -r $SDKTOP/3p/include/H5* /usr/local/include/ \
+    && cp -r $SDKTOP/3p/include/hdf5.h /usr/local/include/ \
+    && cp -r $SDKTOP/3p/include/ph5diff.h /usr/local/include/ \
     && cp -r $SDKTOP/3p/lib/libh* /usr/local/lib/
 
 # Install MKL
 WORKDIR ${HOME}/local_setup/
-RUN wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
+RUN wget --no-check-certificate https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
 RUN apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB && echo 'deb https://apt.repos.intel.com/mkl all main' > /etc/apt/sources.list.d/intel-mkl.list
 RUN apt-get update && apt-get install -y intel-mkl-64bit-2019.4-070 2019.4-070
 RUN echo "/opt/intel/lib/intel64" > /etc/ld.so.conf.d/mkl.conf && echo "/opt/intel/lib/intel64" > /etc/ld.so.conf.d/mkl.conf && ldconfig
@@ -72,7 +72,7 @@ RUN echo "/opt/intel/lib/intel64" > /etc/ld.so.conf.d/mkl.conf && echo "/opt/int
 RUN apt install libfftw3-dev libfftw3-3 -y
 
 # Install ARMADILLO
-RUN wget https://downloads.sourceforge.net/project/arma/armadillo-9.900.1.tar.xz
+RUN wget --no-check-certificate https://downloads.sourceforge.net/project/arma/armadillo-9.900.1.tar.xz
 RUN tar xvf armadillo-9.900.1.tar.xz
 RUN cd armadillo-9.900.1 && sed -i '/include(ARMA_FindARPACK)/d' CMakeLists.txt \
     && CC=gcc-4.8 CXX=g++-4.8 FC=gfortran-4.8 ./configure -DCMAKE_INSTALL_PREFIX=/usr/local/ -DBUILD_SHARED_LIBS=no && make -j 4 \
